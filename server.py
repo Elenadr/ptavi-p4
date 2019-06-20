@@ -6,26 +6,34 @@ Clase (y programa principal) para un servidor de eco en UDP simple
 
 import socketserver
 import sys
+import time
 
 
-PORT = int(sys.argv[1])
+
 class SIPRegisterHandler(socketserver.DatagramRequestHandler):
     dic = {}
 
     def handle(self):
-        """
-        handle method of the server class
-        (all requests will be handled by this method)
-        """
         self.wfile.write(b"Hemos recibido tu peticion")
-        IPclient = self.client_address[0]
-        PORTclient = self.client_address[1]
         for line in self.rfile:
-            print("El cliente nos manda ", line.decode('utf-8'),IPclient, PORTclient)
+            regis = line.decode('utf-8')
+            lista_regis = regis.split(" ")
+            IPclient = self.client_address[0]
+            PORTclient = self.client_address[1]
+            if lista_regis[0] == "REGISTER":
+                user= lista_regis[1][lista_regis[1].rfind(":") +1:]
+                print("\n" + "Cliente con IP " + str(IPclient) + " y puerto " + str(PORTclient))
+                print("\n" + "Envia: " + regis)
+            elif lista_regis[0] == "Expires:":
+                expires=lista_regis[1]
+                self.dic[user] = [IPclient, expires]
+                print("Expire: " + expires)
+                if int(expires) == 0:
+                    del self.dic[user]
+        print(self.dic)
 
 if __name__ == "__main__":
-    # Listens at localhost ('') port 6001 
-    # and calls the EchoHandler class to manage the request
+    PORT = int(sys.argv[1])
     serv = socketserver.UDPServer(('', PORT), SIPRegisterHandler)
 
     print("Lanzando servidor UDP de Sip...")
